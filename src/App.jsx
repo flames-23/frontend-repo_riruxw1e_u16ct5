@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, Github, Linkedin, ArrowRight, ExternalLink, Code2, Sparkles } from 'lucide-react'
+import { Mail, Github, Linkedin, ArrowRight, ExternalLink, Code2, Sparkles, ChevronUp } from 'lucide-react'
 import Spline from '@splinetool/react-spline'
+import Loader from './components/Loader'
 
 function SectionHeader({ kicker, title, subtitle }) {
   return (
@@ -23,23 +24,41 @@ function Badge({ children }) {
 
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const navItems = [
+  const [isLoading, setIsLoading] = useState(true)
+  const [progress, setProgress] = useState(0)
+  const [showToTop, setShowToTop] = useState(false)
+
+  const navItems = useMemo(() => ([
     { label: 'Home', href: '#home' },
     { label: 'About', href: '#about' },
     { label: 'Skills', href: '#skills' },
     { label: 'Projects', href: '#projects' },
     { label: 'Contact', href: '#contact' },
-  ]
+  ]), [])
 
+  // Navbar style on scroll + progress + back-to-top
   useEffect(() => {
     const onScroll = () => {
       const header = document.getElementById('site-header')
-      if (!header) return
-      if (window.scrollY > 10) header.classList.add('backdrop-blur', 'bg-white/70', 'shadow-sm')
-      else header.classList.remove('backdrop-blur', 'bg-white/70', 'shadow-sm')
+      if (header) {
+        if (window.scrollY > 10) header.classList.add('backdrop-blur', 'bg-white/70', 'shadow-sm')
+        else header.classList.remove('backdrop-blur', 'bg-white/70', 'shadow-sm')
+      }
+      const scrollTop = window.scrollY
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight
+      const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
+      setProgress(pct)
+      setShowToTop(scrollTop > 600)
     }
     window.addEventListener('scroll', onScroll)
+    onScroll()
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Ensure loader shows until Spline is ready or a timeout fallback
+  useEffect(() => {
+    const minTimer = setTimeout(() => setIsLoading(false), 1800)
+    return () => clearTimeout(minTimer)
   }, [])
 
   const heroVariants = {
@@ -49,6 +68,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900" id="home">
+      <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:bg-white focus:text-blue-700 focus:ring-2 focus:ring-blue-600 focus:px-3 focus:py-2 focus:rounded-md z-[60]">Skip to content</a>
+
+      {/* Global Loader */}
+      <Loader show={isLoading} text="Setting up the 3D scene…" />
+
+      {/* Scroll progress bar */}
+      <div className="fixed top-0 left-0 right-0 h-1 z-40">
+        <div className="h-full bg-blue-600 transition-[width] duration-150" style={{ width: `${progress}%` }} />
+      </div>
+
       {/* Navbar */}
       <header id="site-header" className="fixed top-0 left-0 right-0 z-50 transition-all">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -121,115 +150,129 @@ export default function App() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1 }} className="relative h-[420px] sm:h-[520px] lg:h-[560px] rounded-2xl overflow-hidden shadow-xl">
-            <Spline scene="https://prod.spline.design/VJLoxp84lCdVfdZu/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+            <Spline scene="https://prod.spline.design/VJLoxp84lCdVfdZu/scene.splinecode" style={{ width: '100%', height: '100%' }} onLoad={() => setIsLoading(false)} />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
           </motion.div>
         </div>
       </section>
 
-      {/* About */}
-      <section id="about" className="relative py-20 sm:py-24 bg-gradient-to-b from-white to-blue-50/50">
-        <SectionHeader kicker="About" title="A bit about me" subtitle="Developer focused on clean code, DX, and product impact" />
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="bg-white rounded-xl p-6 shadow-sm border">
-            <h3 className="text-xl font-semibold mb-2">Background</h3>
-            <p className="text-gray-600">I'm a BCA graduate with a passion for full‑stack development. I enjoy working across the stack—from crafting interactive frontends to building reliable, secure backends.</p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white rounded-xl p-6 shadow-sm border">
-            <h3 className="text-xl font-semibold mb-2">What I value</h3>
-            <p className="text-gray-600">Clean architecture, accessible UX, performance, and maintainability. I love building with modern tools and adding playful touches with motion and 3D.</p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Skills */}
-      <section id="skills" className="py-20 sm:py-24">
-        <SectionHeader kicker="Skills" title="Technologies I work with" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { title: 'Frontend', items: ['React', 'Next.js', 'Tailwind', 'Framer Motion'] },
-            { title: 'Backend', items: ['Node.js', 'Express', 'FastAPI', 'MongoDB'] },
-            { title: 'Tools', items: ['Git', 'Docker', 'Vite', 'Postman'] },
-            { title: 'Others', items: ['REST APIs', 'Auth', 'Testing', 'CI/CD'] },
-          ].map((card, idx) => (
-            <motion.div key={card.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.05 }} className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="font-semibold mb-3">{card.title}</h3>
-              <div className="flex flex-wrap gap-2">
-                {card.items.map((chip) => (
-                  <span key={chip} className="px-3 py-1 rounded-full bg-gray-50 border text-sm text-gray-700">{chip}</span>
-                ))}
-              </div>
+      <main id="content">
+        {/* About */}
+        <section id="about" className="relative py-20 sm:py-24 bg-gradient-to-b from-white to-blue-50/50">
+          <SectionHeader kicker="About" title="A bit about me" subtitle="Developer focused on clean code, DX, and product impact" />
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="bg-white rounded-xl p-6 shadow-sm border">
+              <h3 className="text-xl font-semibold mb-2">Background</h3>
+              <p className="text-gray-600">I'm a BCA graduate with a passion for full‑stack development. I enjoy working across the stack—from crafting interactive frontends to building reliable, secure backends.</p>
             </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Projects */}
-      <section id="projects" className="py-20 sm:py-24 bg-gradient-to-b from-blue-50/50 to-white">
-        <SectionHeader kicker="Projects" title="Selected work" subtitle="A snapshot of things I've built and shipped" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-6">
-          {[
-            {
-              title: 'Interactive Portfolio',
-              desc: 'Modern portfolio with 3D hero, motion, and responsive design.',
-              tech: ['React', 'Spline', 'Tailwind'],
-              link: '#',
-            },
-            {
-              title: 'Task Manager API',
-              desc: 'JWT-authenticated API with filtering, pagination, and testing.',
-              tech: ['FastAPI', 'MongoDB', 'PyTest'],
-              link: '#',
-            },
-            {
-              title: 'E-commerce UI',
-              desc: 'Accessible storefront with product cards, cart, and checkout flow.',
-              tech: ['Next.js', 'Stripe', 'Tailwind'],
-              link: '#',
-            },
-            {
-              title: 'Real-time Chat',
-              desc: 'Websocket chat with typing indicators and message reactions.',
-              tech: ['Node', 'Socket.IO', 'Redis'],
-              link: '#',
-            },
-          ].map((p, i) => (
-            <motion.a key={p.title} href={p.link} target={p.link.startsWith('http') ? '_blank' : undefined} rel={p.link.startsWith('http') ? 'noreferrer' : undefined} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.06 }} className="group block bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors">{p.title}</h3>
-                <ExternalLink size={18} className="text-gray-400 group-hover:text-blue-600 transition-colors"/>
-              </div>
-              <p className="mt-2 text-gray-600">{p.desc}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {p.tech.map((t) => (
-                  <span key={t} className="px-2.5 py-1 rounded-full bg-gray-50 border text-xs text-gray-700">{t}</span>
-                ))}
-              </div>
-            </motion.a>
-          ))}
-        </div>
-      </section>
-
-      {/* Contact */}
-      <section id="contact" className="py-20 sm:py-24">
-        <SectionHeader kicker="Contact" title="Let’s build something great" subtitle="I’m available for freelance and full‑time opportunities" />
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white border rounded-2xl p-6 sm:p-8 shadow-sm">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <a href="mailto:sahil@example.com" className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-lg transition-colors">
-                <Mail size={18}/> Email Me
-              </a>
-              <a href="https://linkedin.com/" target="_blank" rel="noreferrer" className="w-full inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold px-5 py-3 rounded-lg transition-colors">
-                <Linkedin size={18}/> LinkedIn
-              </a>
-              <a href="https://github.com/" target="_blank" rel="noreferrer" className="w-full inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold px-5 py-3 rounded-lg transition-colors sm:col-span-2">
-                <Github size={18}/> GitHub
-              </a>
-            </div>
-            <p className="mt-4 text-center text-sm text-gray-600">Prefer a quick chat? Reach out and I’ll get back within 24 hours.</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white rounded-xl p-6 shadow-sm border">
+              <h3 className="text-xl font-semibold mb-2">What I value</h3>
+              <p className="text-gray-600">Clean architecture, accessible UX, performance, and maintainability. I love building with modern tools and adding playful touches with motion and 3D.</p>
+            </motion.div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Skills */}
+        <section id="skills" className="py-20 sm:py-24">
+          <SectionHeader kicker="Skills" title="Technologies I work with" />
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { title: 'Frontend', items: ['React', 'Next.js', 'Tailwind', 'Framer Motion'] },
+              { title: 'Backend', items: ['Node.js', 'Express', 'FastAPI', 'MongoDB'] },
+              { title: 'Tools', items: ['Git', 'Docker', 'Vite', 'Postman'] },
+              { title: 'Others', items: ['REST APIs', 'Auth', 'Testing', 'CI/CD'] },
+            ].map((card, idx) => (
+              <motion.div key={card.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.05 }} className="bg-white rounded-xl p-6 shadow-sm border">
+                <h3 className="font-semibold mb-3">{card.title}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {card.items.map((chip) => (
+                    <span key={chip} className="px-3 py-1 rounded-full bg-gray-50 border text-sm text-gray-700">{chip}</span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Projects */}
+        <section id="projects" className="py-20 sm:py-24 bg-gradient-to-b from-blue-50/50 to-white">
+          <SectionHeader kicker="Projects" title="Selected work" subtitle="A snapshot of things I've built and shipped" />
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-6">
+            {[
+              {
+                title: 'Interactive Portfolio',
+                desc: 'Modern portfolio with 3D hero, motion, and responsive design.',
+                tech: ['React', 'Spline', 'Tailwind'],
+                link: '#',
+              },
+              {
+                title: 'Task Manager API',
+                desc: 'JWT-authenticated API with filtering, pagination, and testing.',
+                tech: ['FastAPI', 'MongoDB', 'PyTest'],
+                link: '#',
+              },
+              {
+                title: 'E-commerce UI',
+                desc: 'Accessible storefront with product cards, cart, and checkout flow.',
+                tech: ['Next.js', 'Stripe', 'Tailwind'],
+                link: '#',
+              },
+              {
+                title: 'Real-time Chat',
+                desc: 'Websocket chat with typing indicators and message reactions.',
+                tech: ['Node', 'Socket.IO', 'Redis'],
+                link: '#',
+              },
+            ].map((p, i) => (
+              <motion.a key={p.title} href={p.link} target={p.link.startsWith('http') ? '_blank' : undefined} rel={p.link.startsWith('http') ? 'noreferrer' : undefined} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.06 }} className="group block bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between">
+                  <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors">{p.title}</h3>
+                  <ExternalLink size={18} className="text-gray-400 group-hover:text-blue-600 transition-colors"/>
+                </div>
+                <p className="mt-2 text-gray-600">{p.desc}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {p.tech.map((t) => (
+                    <span key={t} className="px-2.5 py-1 rounded-full bg-gray-50 border text-xs text-gray-700">{t}</span>
+                  ))}
+                </div>
+              </motion.a>
+            ))}
+          </div>
+        </section>
+
+        {/* Contact */}
+        <section id="contact" className="py-20 sm:py-24">
+          <SectionHeader kicker="Contact" title="Let’s build something great" subtitle="I’m available for freelance and full‑time opportunities" />
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-white border rounded-2xl p-6 sm:p-8 shadow-sm">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <a href="mailto:sahil@example.com" className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-lg transition-colors">
+                  <Mail size={18}/> Email Me
+                </a>
+                <a href="https://linkedin.com/" target="_blank" rel="noreferrer" className="w-full inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold px-5 py-3 rounded-lg transition-colors">
+                  <Linkedin size={18}/> LinkedIn
+                </a>
+                <a href="https://github.com/" target="_blank" rel="noreferrer" className="w-full inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold px-5 py-3 rounded-lg transition-colors sm:col-span-2">
+                  <Github size={18}/> GitHub
+                </a>
+              </div>
+              <p className="mt-4 text-center text-sm text-gray-600">Prefer a quick chat? Reach out and I’ll get back within 24 hours.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Back to top button */}
+      <motion.button
+        aria-label="Back to top"
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-6 right-6 z-40 rounded-full bg-blue-600 text-white p-3 shadow-lg hover:bg-blue-700"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: showToTop ? 1 : 0, scale: showToTop ? 1 : 0.8 }}
+        transition={{ duration: 0.2 }}
+      >
+        <ChevronUp size={20} />
+      </motion.button>
 
       {/* Footer */}
       <footer className="py-10 border-t">
